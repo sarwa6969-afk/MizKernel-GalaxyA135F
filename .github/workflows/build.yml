@@ -1,0 +1,58 @@
+name: Build Samsung A135F Kernel
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout Kernel Source
+        uses: actions/checkout@v4
+        with:
+          depth: 1
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc bison build-essential ccache curl flex git libncurses5-dev libssl-dev libtinfo5 python3 unzip wget zip cpio
+
+      - name: Download Toolchain (Clang r416183b & GCC)
+        run: |
+          mkdir -p clang gcc64 gcc32
+          wget -q https://googlesource.com -O clang.tar.gz
+          tar -xf clang.tar.gz -C clang
+          git clone --depth=1 https://github.com gcc64
+          git clone --depth=1 https://github.com gcc32
+
+      - name: Setup KernelSU
+        run: |
+          curl -LSs "https://githubusercontent.com" | bash -s v0.9.5
+
+      - name: Build Kernel
+        run: |
+          export ARCH=arm64
+          export SUBARCH=arm64
+          export PATH="$PWD/clang/bin:$PWD/gcc64/bin:$PWD/gcc32/bin:$PATH"
+          make O=out ARCH=arm64 mizkernel-a13xx_defconfig
+          make -j$(nproc) O=out ARCH=arm64 \
+            CC=clang \
+            CLANG_TRIPLE=aarch64-linux-gnu- \
+            CROSS_COMPILE=aarch64-linux-android- \
+            CROSS_COMPILE_ARM32=arm-linux-androideabi-
+
+      - name: Package AnyKernel3 Zip
+        run: |
+          git clone --depth=1 https://github.com AnyKernel3
+          sed -i 's/do.devicecheck=1/do.devicecheck=0/g' AnyKernel3/anykernel.sh
+          sed -i 's/block=\/dev\/block\/platform\/omap\/omap_hsmmc.0\/by-name\/boot;/block=auto;/g' AnyKernel3/anykernel.sh
+          sed -i 's/is_slot_device=0;/is_slot_device=auto;/g' AnyKernel3/anykernel.sh
+          cp out/arch/arm64/boot/Image AnyKernel3/
+          cd AnyKernel3
+          zip -r9 ../A135F-UptimeSpoof-Kernel.zip * -x .git README.md *placeholder
+
+      - name: Upload Kernel Zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: A135F-UptimeSpoof-Kernel
+          path: A135F-UptimeSpoof-Kernel.zip
