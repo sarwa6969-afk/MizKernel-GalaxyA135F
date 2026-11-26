@@ -10,7 +10,7 @@ jobs:
       - name: Checkout Kernel Source
         uses: actions/checkout@v4
         with:
-          depth: 1
+          fetch-depth: 1
 
       - name: Install Dependencies
         run: |
@@ -19,9 +19,7 @@ jobs:
 
       - name: Download Toolchain (Clang r416183b & GCC)
         run: |
-          mkdir -p clang gcc64 gcc32
-          wget -q https://googlesource.com -O clang.tar.gz
-          tar -xf clang.tar.gz -C clang
+          git clone --depth=1 https://github.com clang
           git clone --depth=1 https://github.com gcc64
           git clone --depth=1 https://github.com gcc32
 
