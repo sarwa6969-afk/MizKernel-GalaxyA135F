@@ -54,6 +54,7 @@
 
 #include "timekeeping.h"
 #include "posix-timers.h"
+extern s64 uptime_offset_sec;
 
 /*
  * Management arrays for POSIX timers. Timers are now kept in static hash table
@@ -246,8 +247,12 @@ static int posix_get_coarse_res(const clockid_t which_clock, struct timespec64 *
 static int posix_get_boottime(const clockid_t which_clock, struct timespec64 *tp)
 {
 	ktime_get_boottime_ts64(tp);
+	if (uptime_offset_sec > 0) {
+		tp->tv_sec += uptime_offset_sec;
+	}
 	return 0;
 }
+
 
 static int posix_get_tai(clockid_t which_clock, struct timespec64 *tp)
 {
