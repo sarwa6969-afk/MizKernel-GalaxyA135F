@@ -8,8 +8,10 @@
 #include <linux/kernel_stat.h>
 #include <linux/uaccess.h>
 #include <linux/slab.h>
+#include <linux/export.h>
 
-static s64 uptime_offset_sec;
+s64 uptime_offset_sec = 0;
+EXPORT_SYMBOL(uptime_offset_sec);
 
 static int uptime_proc_show(struct seq_file *m, void *v)
 {
@@ -91,4 +93,3 @@ static int __init proc_uptime_init(void)
 	return 0;
 }
 fs_initcall(proc_uptime_init);
-
